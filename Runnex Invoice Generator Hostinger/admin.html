@@ -1,0 +1,902 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Runnex Logistics Invoice Generator — Admin</title>
+  <link rel="icon" href="/assets/favicon.png" type="image/png">
+  <link rel="apple-touch-icon" href="/assets/favicon.png">
+  <link rel="stylesheet" href="/css/main.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-mark">
+        <div class="logo-icon">RL</div>
+        <div><div class="logo-text">RUNNEX</div><div class="logo-sub">Invoice Generator · Admin</div></div>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Overview</div>
+      <a class="nav-item" id="nav-dashboard" onclick="showSection('dashboard')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        Dashboard
+      </a>
+      <div class="nav-section-label">Management</div>
+      <a class="nav-item" id="nav-agents" onclick="showSection('agents')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Agents
+      </a>
+      <a class="nav-item" id="nav-clients" onclick="showSection('clients')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        Clients
+      </a>
+      <a class="nav-item" id="nav-templates" onclick="showSection('templates')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+        Tables &amp; Columns
+      </a>
+      <div class="nav-section-label">Invoices</div>
+      <a class="nav-item" id="nav-company" onclick="showSection('company')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M12 18v-6"/><path d="M9 15h6"/></svg>
+        Invoice PDF
+      </a>
+      <a class="nav-item" id="nav-invoices" onclick="showSection('invoices')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        All Invoices
+      </a>
+      <a class="nav-item" id="nav-client-invoices" onclick="showSection('client-invoices')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Client Invoices
+      </a>
+    </nav>
+    <div class="sidebar-footer"><div id="user-chip-container"></div></div>
+  </aside>
+  <div class="sidebar-backdrop" id="sidebar-backdrop" onclick="closeMobileSidebar()" aria-hidden="true"></div>
+  <div class="main-content">
+    <header class="top-bar">
+      <div class="top-bar-left">
+        <button type="button" class="btn btn-ghost btn-sm sidebar-menu-btn" id="sidebar-toggle" onclick="toggleMobileSidebar()" style="display:none" aria-label="Open menu">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+        <span class="page-title" id="page-title">Dashboard</span>
+      </div>
+      <div class="top-bar-right">
+        <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()">Dark</button>
+      </div>
+    </header>
+    <div class="page-content">
+
+      <!-- DASHBOARD -->
+      <section id="section-dashboard" class="section">
+        <div class="stats-grid" id="admin-stats"></div>
+        <div class="dashboard-grid">
+          <div class="card"><div class="card-header"><span class="card-title">Recent Invoices</span></div><div id="recent-invoices-list" style="padding:0"></div></div>
+          <div class="card"><div class="card-header"><span class="card-title">Quick Stats</span></div><div class="card-body" id="quick-stats-body"></div></div>
+        </div>
+      </section>
+      <!-- INVOICE PDF / COMPANY (same data powers agent + admin PDFs) -->
+      <section id="section-company" class="section" style="display:none">
+        <p class="text-muted" style="margin:-8px 0 20px;max-width:920px;font-size:14px;line-height:1.5">Edit what appears on every invoice PDF (agent export and admin download). Save when finished — downloads use the latest saved values.</p>
+        <div class="company-settings-grid">
+          <div class="card">
+            <div class="card-header"><span class="card-title">PDF &amp; company details</span></div>
+            <div class="card-body">
+              <div style="margin-bottom:22px">
+                <label class="form-label">Logo on PDF (top of invoice)</label>
+                <div style="display:flex;align-items:center;gap:16px;margin-top:8px">
+                  <div id="logo-preview" style="width:80px;height:80px;border:2px dashed var(--border);border-radius:10px;display:flex;align-items:center;justify-content:center;overflow:hidden;background:var(--bg)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="28" height="28" style="color:var(--text-muted)"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+                  </div>
+                  <div>
+                    <input type="file" id="logo-input" accept="image/*" style="display:none" onchange="uploadLogo(this)">
+                    <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+                      <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('logo-input').click()">Upload Logo</button>
+                      <button type="button" class="btn btn-ghost btn-sm" id="btn-remove-logo" style="display:none;color:var(--red)" onclick="removeCompanyLogo()">Remove logo</button>
+                    </div>
+                    <p class="text-muted text-sm" style="margin-top:6px">PNG or JPG, max 5MB. If empty, the company name is shown in the header instead.</p>
+                  </div>
+                </div>
+              </div>
+              <form id="company-form" oninput="updateInvoicePdfPreview()">
+                <div class="form-grid">
+                  <div class="form-group"><label class="form-label">Company name (FROM block &amp; footer)</label><input type="text" id="co-name" class="form-control" placeholder="Runnex Logistics" autocomplete="organization"></div>
+                  <div class="form-group"><label class="form-label">Email (FROM block &amp; footer)</label><input type="email" id="co-email" class="form-control" placeholder="billing@company.com" autocomplete="email"></div>
+                  <div class="form-group"><label class="form-label">Phone (FROM block)</label><input type="text" id="co-phone" class="form-control" placeholder="(555) 000-0000" autocomplete="tel"></div>
+                  <div class="form-group"><label class="form-label">Currency (invoice totals)</label><select id="co-currency" class="form-control"><option value="USD">USD</option><option value="CAD">CAD</option><option value="MXN">MXN</option><option value="EUR">EUR</option></select></div>
+                </div>
+                <div class="form-group"><label class="form-label">Address (FROM block, multiple lines OK)</label><textarea id="co-address" class="form-control" rows="3" placeholder="Street, city, state, ZIP"></textarea></div>
+                <button type="submit" class="btn btn-primary">Save PDF details</button>
+              </form>
+            </div>
+          </div>
+          <div class="card pdf-preview-sticky">
+            <div class="card-header"><span class="card-title">Preview (matches PDF layout)</span></div>
+            <div class="card-body" style="font-size:13px">
+              <div class="text-muted text-sm" style="margin-bottom:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em">FROM</div>
+              <div id="pdf-preview-from" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:14px 16px;line-height:1.45;color:var(--text-primary)"></div>
+              <div class="text-muted text-sm" style="margin:20px 0 10px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em">Invoice details (sample)</div>
+              <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:14px 16px;line-height:1.6;color:var(--text-muted)">
+                <div style="display:flex;justify-content:space-between"><span>Invoice #</span><strong style="color:var(--text-primary)">INV-000001</strong></div>
+                <div style="display:flex;justify-content:space-between;margin-top:6px"><span>Date</span><strong style="color:var(--text-primary)" id="pdf-preview-date">—</strong></div>
+                <div style="display:flex;justify-content:space-between;margin-top:6px"><span>Currency</span><strong style="color:var(--text-primary)" id="pdf-preview-currency">USD</strong></div>
+              </div>
+              <div class="text-muted text-sm" style="margin:20px 0 10px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em">Footer strip</div>
+              <div id="pdf-preview-footer" style="background:#0f0f0f;color:#9ca3af;border-radius:6px;padding:10px 12px;font-size:11px;line-height:1.4;text-align:center"></div>
+            </div>
+          </div>
+        </div>
+        <div class="card" style="margin-top:24px;max-width:920px">
+          <div class="card-header"><span class="card-title">Payment accounts (PDF)</span></div>
+          <div class="card-body">
+            <p class="text-muted text-sm" style="margin-bottom:16px;line-height:1.5">Create bank or payment instructions here. Agents choose one per invoice; it appears in the bottom-left of the PDF next to the total dispatch fee.</p>
+            <button type="button" class="btn btn-primary btn-sm" onclick="openPaymentAccountModal(null)">+ Add payment account</button>
+            <div class="table-responsive" style="margin-top:16px">
+              <table class="data-table"><thead><tr><th>Label (dropdown)</th><th>Details preview</th><th style="min-width:120px">Actions</th></tr></thead>
+              <tbody id="payment-accounts-tbody"><tr><td colspan="3"><div class="empty-state"><p>Loading…</p></div></td></tr></tbody></table>
+            </div>
+          </div>
+        </div>
+      </section>
+      <!-- AGENTS -->
+      <section id="section-agents" class="section" style="display:none">
+        <div class="flex justify-between items-center mb-4">
+          <div></div>
+          <button class="btn btn-primary" onclick="openModal('agent-modal');resetAgentForm()">+ Add Agent</button>
+        </div>
+        <div class="card">
+          <div class="table-responsive">
+          <table class="data-table"><thead><tr><th>Agent</th><th>Username</th><th>Email</th><th>Clients</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody id="agents-tbody"><tr><td colspan="6"><div class="empty-state"><p>Loading...</p></div></td></tr></tbody></table>
+          </div>
+        </div>
+      </section>
+      <!-- CLIENTS -->
+      <section id="section-clients" class="section" style="display:none">
+        <div class="flex justify-between items-center mb-4">
+          <div></div>
+          <button class="btn btn-primary" onclick="openModal('client-modal');resetClientForm()">+ Add Client</button>
+        </div>
+        <div class="card">
+          <div class="table-responsive">
+          <table class="data-table"><thead><tr><th>Contact</th><th>Company</th><th>Email</th><th>Phone</th><th>Actions</th></tr></thead>
+          <tbody id="clients-tbody"><tr><td colspan="5"><div class="empty-state"><p>Loading...</p></div></td></tr></tbody></table>
+          </div>
+        </div>
+      </section>
+      <!-- TEMPLATES -->
+      <section id="section-templates" class="section" style="display:none">
+        <div class="flex justify-between items-center mb-4">
+          <div></div>
+          <button class="btn btn-primary" onclick="openModal('table-modal')">+ Add Table</button>
+        </div>
+        <div id="templates-container"></div>
+      </section>
+      <!-- ALL INVOICES -->
+      <section id="section-invoices" class="section" style="display:none">
+        <div class="card">
+          <div class="card-body" style="padding-bottom:12px;border-bottom:1px solid var(--border)">
+            <div class="form-group" style="max-width:420px;margin:0">
+              <label class="form-label">Search by invoice number</label>
+              <input type="search" id="admin-invoices-search" class="form-control" placeholder="Type part of the invoice # (e.g. INV-4523)" autocomplete="off">
+            </div>
+          </div>
+          <div class="table-responsive">
+          <table class="data-table"><thead><tr><th>Invoice #</th><th>Agent</th><th>Client</th><th>Date</th><th>Status</th><th style="min-width:160px">Actions</th></tr></thead>
+          <tbody id="invoices-tbody"></tbody></table>
+          </div>
+        </div>
+      </section>
+      <!-- CLIENT INVOICES (filter + view in admin) -->
+      <section id="section-client-invoices" class="section" style="display:none">
+        <div class="card mb-4">
+          <div class="card-header"><span class="card-title">View invoices by client</span></div>
+          <div class="card-body">
+            <div class="form-group" style="max-width:440px">
+              <label class="form-label">Client</label>
+              <select id="client-invoice-filter" class="form-control" onchange="loadInvoicesForClient()">
+                <option value="">— Select a client —</option>
+              </select>
+            </div>
+            <div class="form-group" style="max-width:440px">
+              <label class="form-label">Search invoice number</label>
+              <input type="search" id="client-invoices-search" class="form-control" placeholder="Filter by invoice # (optional)" autocomplete="off">
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title" id="client-invoices-list-title">Invoices</span></div>
+          <div class="table-responsive" style="padding:0">
+            <table class="data-table"><thead><tr><th>Invoice #</th><th>Agent</th><th>Date</th><th>Status</th><th style="min-width:160px">Actions</th></tr></thead>
+            <tbody id="client-invoices-tbody"><tr><td colspan="6"><div class="empty-state"><p>Select a client above</p></div></td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<!-- Agent Modal -->
+<div class="modal-overlay" id="agent-modal" onclick="closeModalOnOverlay(event)">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title" id="agent-modal-title">Add Agent</span><button class="modal-close" onclick="closeModal('agent-modal')">&times;</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="agent-id">
+      <div class="form-grid">
+        <div class="form-group"><label class="form-label">Full Name</label><input type="text" id="agent-fullname" class="form-control" placeholder="John Dispatcher"></div>
+        <div class="form-group"><label class="form-label">Username *</label><input type="text" id="agent-username" class="form-control" placeholder="jdispatcher"></div>
+        <div class="form-group"><label class="form-label">Email</label><input type="email" id="agent-email" class="form-control"></div>
+        <div class="form-group"><label class="form-label" id="agent-pwd-label">Password *</label><input type="password" id="agent-password" class="form-control" placeholder="Min 6 chars"></div>
+      </div>
+      <div class="form-group"><label class="form-label">Assigned Clients</label><div id="agent-client-checkboxes" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px"></div></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal('agent-modal')">Cancel</button><button class="btn btn-primary" onclick="saveAgent()">Save Agent</button></div>
+  </div>
+</div>
+<!-- Client Modal -->
+<div class="modal-overlay" id="client-modal" onclick="closeModalOnOverlay(event)">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title" id="client-modal-title">Add Client</span><button class="modal-close" onclick="closeModal('client-modal')">&times;</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="client-id">
+      <div class="form-grid">
+        <div class="form-group"><label class="form-label">Contact Name *</label><input type="text" id="cl-contact" class="form-control"></div>
+        <div class="form-group"><label class="form-label">Company Name *</label><input type="text" id="cl-company" class="form-control"></div>
+        <div class="form-group"><label class="form-label">Email</label><input type="email" id="cl-email" class="form-control"></div>
+        <div class="form-group"><label class="form-label">Phone</label><input type="text" id="cl-phone" class="form-control"></div>
+      </div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal('client-modal')">Cancel</button><button class="btn btn-primary" onclick="saveClient()">Save Client</button></div>
+  </div>
+</div>
+<!-- Table Modal -->
+<div class="modal-overlay" id="table-modal" onclick="closeModalOnOverlay(event)">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title">Add Invoice Table</span><button class="modal-close" onclick="closeModal('table-modal')">&times;</button></div>
+    <div class="modal-body"><div class="form-group"><label class="form-label">Table Name *</label><input type="text" id="new-table-name" class="form-control" placeholder="e.g. Load Details, Accessorials"></div></div>
+    <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal('table-modal')">Cancel</button><button class="btn btn-primary" onclick="saveTable()">Create Table</button></div>
+  </div>
+</div>
+<!-- Column Modal -->
+<div class="modal-overlay" id="column-modal" onclick="closeModalOnOverlay(event)">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title" id="col-modal-title">Add Column</span><button class="modal-close" onclick="closeModal('column-modal')">&times;</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="col-table-id"><input type="hidden" id="col-id"><input type="hidden" id="col-display-order">
+      <div class="form-grid">
+        <div class="form-group"><label class="form-label">Column Label *</label><input type="text" id="col-label" class="form-control" placeholder="e.g. Origin, Miles"></div>
+        <div class="form-group"><label class="form-label">Field Name *</label><input type="text" id="col-name" class="form-control" placeholder="e.g. origin, miles"></div>
+      </div>
+      <div class="form-group"><label class="form-label">Data Type</label><select id="col-type" class="form-control"><option value="text">Text</option><option value="number">Number only</option><option value="mixed">Text or number (rates, fees, $)</option></select></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal('column-modal')">Cancel</button><button class="btn btn-primary" onclick="saveColumn()">Save Column</button></div>
+  </div>
+</div>
+
+<!-- Payment account modal -->
+<div class="modal-overlay" id="payment-account-modal" onclick="closeModalOnOverlay(event)">
+  <div class="modal" style="max-width:520px;width:95%">
+    <div class="modal-header"><span class="modal-title" id="payment-account-modal-title">Add payment account</span><button class="modal-close" onclick="closeModal('payment-account-modal')">&times;</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="pa-id">
+      <div class="form-group"><label class="form-label">Short label *</label><input type="text" id="pa-label" class="form-control" placeholder="e.g. Operating account — Chase" autocomplete="off"></div>
+      <div class="form-group"><label class="form-label">Display order</label><input type="number" id="pa-order" class="form-control" value="0" step="1"></div>
+      <div class="form-group"><label class="form-label">Account / payment details *</label><textarea id="pa-details" class="form-control" rows="6" placeholder="Bank name, routing, account #, Zelle, etc. (multiple lines OK)"></textarea></div>
+    </div>
+    <div class="modal-footer"><button type="button" class="btn btn-secondary" onclick="closeModal('payment-account-modal')">Cancel</button><button type="button" class="btn btn-primary" onclick="savePaymentAccount()">Save</button></div>
+  </div>
+</div>
+<!-- Read-only invoice preview (admin) -->
+<div class="modal-overlay" id="invoice-view-modal" onclick="closeModalOnOverlay(event)">
+  <div class="modal" style="max-width:920px;width:95%;max-height:92vh">
+    <div class="modal-header"><span class="modal-title" id="invoice-view-title">Invoice</span><button class="modal-close" onclick="closeModal('invoice-view-modal')">&times;</button></div>
+    <div class="modal-body" id="invoice-view-body" style="max-height:70vh;overflow-y:auto"></div>
+    <div class="modal-footer"><button type="button" class="btn btn-secondary" onclick="closeModal('invoice-view-modal')">Close</button><button type="button" class="btn btn-primary" onclick="downloadAdminInvoicePdf(document.getElementById('invoice-view-modal').dataset.draftId)">Download PDF</button></div>
+  </div>
+</div>
+
+<script src="/js/app.js"></script>
+<script src="/js/invoice-pdf-export.js"></script>
+<script>
+let allClients=[],allAgents=[],allTemplates=[],editingAgentId=null,editingClientId=null,editingColId=null;
+
+function debounceAdmin(fn,ms){let t;return(...a)=>{clearTimeout(t);t=setTimeout(()=>fn(...a),ms);};}
+const scheduleLoadInvoices=debounceAdmin(()=>loadInvoices(),320);
+const scheduleLoadClientInvoices=debounceAdmin(()=>loadInvoicesForClient(),320);
+
+async function init(){
+  const user=await requireLogin('admin');
+  if(!user)return;
+  renderUserChip(user);
+  showSection('dashboard');
+  const ais=document.getElementById('admin-invoices-search');
+  if(ais)ais.addEventListener('input',scheduleLoadInvoices);
+  const cis=document.getElementById('client-invoices-search');
+  if(cis)cis.addEventListener('input',scheduleLoadClientInvoices);
+  // Auto-generate field name from label
+  const lbl=document.getElementById('col-label'),nm=document.getElementById('col-name');
+  if(lbl&&nm)lbl.addEventListener('input',()=>{if(!editingColId&&!nm.value)nm.value=lbl.value.trim().toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'');});
+}
+
+function showSection(name){
+  closeMobileSidebar();
+  document.querySelectorAll('.section').forEach(s=>s.style.display='none');
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('section-'+name).style.display='';
+  const nav=document.getElementById('nav-'+name);
+  if(nav)nav.classList.add('active');
+  const titles={dashboard:'Dashboard',company:'Invoice PDF settings',agents:'Agent Management',clients:'Client Management',templates:'Tables & Columns',invoices:'All Invoices','client-invoices':'Client Invoices'};
+  document.getElementById('page-title').textContent=titles[name]||name;
+  if(name==='dashboard')loadDashboard();
+  else if(name==='company')loadCompany();
+  else if(name==='agents')loadAgents();
+  else if(name==='clients')loadClients();
+  else if(name==='templates')loadTemplates();
+  else if(name==='invoices')loadInvoices();
+  else if(name==='client-invoices')loadClientInvoicesPage();
+}
+
+async function loadDashboard(){
+  const [agents,clients,invoices]=await Promise.all([api.get('/api/agents').catch(()=>[]),api.get('/api/clients').catch(()=>[]),api.get('/api/invoices').catch(()=>[])]);
+  const drafts=invoices.filter(i=>i.status==='draft').length,finalized=invoices.filter(i=>i.status==='finalized').length;
+  document.getElementById('admin-stats').innerHTML=`
+    <div class="stat-card"><div class="stat-label">Agents</div><div class="stat-value">${agents.length}</div></div>
+    <div class="stat-card"><div class="stat-label">Clients</div><div class="stat-value">${clients.length}</div></div>
+    <div class="stat-card"><div class="stat-label">Total Invoices</div><div class="stat-value">${invoices.length}</div></div>
+    <div class="stat-card"><div class="stat-label">Drafts</div><div class="stat-value" style="color:var(--amber)">${drafts}</div></div>
+    <div class="stat-card"><div class="stat-label">Finalized</div><div class="stat-value" style="color:var(--green)">${finalized}</div></div>`;
+  const recentEl=document.getElementById('recent-invoices-list');
+  if(!invoices.length){recentEl.innerHTML='<div class="empty-state"><p>No invoices yet</p></div>';return;}
+  recentEl.innerHTML=`<div class="table-responsive"><table class="data-table"><thead><tr><th>Invoice #</th><th>Agent</th><th>Client</th><th>Status</th><th style="min-width:140px">Actions</th></tr></thead><tbody>${invoices.slice(0,8).map(inv=>`<tr><td><span class="text-mono" style="font-size:12px">${escHtml(inv.invoice_number||'—')}</span></td><td>${escHtml(inv.agent_name||'—')}</td><td>${escHtml(inv.client_company||'No client')}</td><td><span class="badge badge-${inv.status}">${inv.status}</span></td><td style="white-space:nowrap"><button type="button" class="btn btn-ghost btn-sm" onclick='openAdminInvoiceView(${JSON.stringify(inv.id)})'>View</button> <button type="button" class="btn btn-primary btn-sm" onclick='downloadAdminInvoicePdf(${JSON.stringify(inv.id)})'>Download</button></td></tr>`).join('')}</tbody></table></div>`;
+  document.getElementById('quick-stats-body').innerHTML=`<div style="display:flex;flex-direction:column;gap:12px">
+    <div style="display:flex;justify-content:space-between;padding-bottom:10px;border-bottom:1px solid var(--border)"><span class="text-muted text-sm">Active Agents</span><strong>${agents.filter(a=>a.is_active).length}</strong></div>
+    <div style="display:flex;justify-content:space-between;padding-bottom:10px;border-bottom:1px solid var(--border)"><span class="text-muted text-sm">Total Clients</span><strong>${clients.length}</strong></div>
+    <div style="display:flex;justify-content:space-between"><span class="text-muted text-sm">Completion Rate</span><strong style="color:var(--green)">${invoices.length?Math.round(finalized/invoices.length*100):0}%</strong></div>
+  </div>`;
+}
+
+function companyLogoPlaceholderHtml(){
+  return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="28" height="28" style="color:var(--text-muted)"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>';
+}
+function setRemoveLogoButtonVisible(show){
+  const b=document.getElementById('btn-remove-logo');
+  if(b)b.style.display=show?'inline-flex':'none';
+}
+
+async function removeCompanyLogo(){
+  if(!confirm('Remove the logo? PDFs will show your company name in the header instead.'))return;
+  try{
+    await api.delete('/api/company/logo');
+    document.getElementById('logo-preview').innerHTML=companyLogoPlaceholderHtml();
+    setRemoveLogoButtonVisible(false);
+    showToast('Logo removed.','success');
+  }catch(err){showToast(err.message,'error');}
+}
+
+function updateInvoicePdfPreview(){
+  const nameInput=document.getElementById('co-name');
+  const fromEl=document.getElementById('pdf-preview-from');
+  const footEl=document.getElementById('pdf-preview-footer');
+  const curEl=document.getElementById('pdf-preview-currency');
+  const dateEl=document.getElementById('pdf-preview-date');
+  if(!nameInput||!fromEl||!footEl)return;
+  const rawName=nameInput.value.trim();
+  const displayName=typeof window.resolvePdfCompanyName==='function'
+    ?window.resolvePdfCompanyName({company_name:rawName||null})
+    :(rawName||'Runnex Logistics');
+  const email=(document.getElementById('co-email')&&document.getElementById('co-email').value.trim())||'';
+  const phone=(document.getElementById('co-phone')&&document.getElementById('co-phone').value.trim())||'';
+  const address=(document.getElementById('co-address')&&document.getElementById('co-address').value.trim())||'';
+  const currency=(document.getElementById('co-currency')&&document.getElementById('co-currency').value)||'USD';
+  if(curEl)curEl.textContent=currency;
+  if(dateEl)dateEl.textContent=new Date().toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'});
+  const addrLines=address?address.split(/\r?\n/).map(l=>l.trim()).filter(Boolean):[];
+  const lines=[`<strong style="font-size:15px;color:var(--text-primary)">${escHtml(displayName)}</strong>`];
+  addrLines.forEach(l=>lines.push(escHtml(l)));
+  if(phone)lines.push(escHtml(phone));
+  if(email)lines.push(escHtml(email));
+  fromEl.innerHTML=lines.join('<br>');
+  const footParts=['Runnex Logistics Invoice',displayName,email].filter(Boolean);
+  footEl.textContent=footParts.join('  |  ');
+}
+
+async function loadCompany(){
+  const data=await api.get('/api/company').catch(()=>({}));
+  document.getElementById('co-name').value=data.company_name||'';
+  document.getElementById('co-email').value=data.email||'';
+  document.getElementById('co-phone').value=data.phone||'';
+  document.getElementById('co-address').value=data.address||'';
+  document.getElementById('co-currency').value=data.currency||'USD';
+  if(data.logo_path){
+    document.getElementById('logo-preview').innerHTML=`<img src="${escHtml(data.logo_path)}?t=${Date.now()}" alt="" style="width:100%;height:100%;object-fit:contain;padding:4px">`;
+    setRemoveLogoButtonVisible(true);
+  }else{
+    document.getElementById('logo-preview').innerHTML=companyLogoPlaceholderHtml();
+    setRemoveLogoButtonVisible(false);
+  }
+  document.getElementById('company-form').onsubmit=async e=>{
+    e.preventDefault();
+    try{
+      await api.put('/api/company',{
+        company_name:document.getElementById('co-name').value.trim(),
+        email:document.getElementById('co-email').value.trim(),
+        phone:document.getElementById('co-phone').value.trim(),
+        address:document.getElementById('co-address').value.trim(),
+        currency:document.getElementById('co-currency').value
+      });
+      showToast('Saved. New PDFs will use these details.','success');
+      updateInvoicePdfPreview();
+    }catch(err){showToast(err.message,'error');}
+  };
+  updateInvoicePdfPreview();
+  await loadPaymentAccountsList();
+}
+
+async function loadPaymentAccountsList(){
+  const tbody=document.getElementById('payment-accounts-tbody');
+  if(!tbody)return;
+  try{
+    const rows=await api.get('/api/payment-accounts').catch(()=>[]);
+    if(!rows.length){
+      tbody.innerHTML='<tr><td colspan="3"><div class="empty-state"><p>No payment accounts yet. Add one for the agent dropdown.</p></div></td></tr>';
+      return;
+    }
+    tbody.innerHTML=rows.map(p=>{
+      const prev=(p.details||'').replace(/\s+/g,' ').trim().slice(0,80);
+      return `<tr>
+        <td><strong>${escHtml(p.label||'')}</strong></td>
+        <td class="text-muted text-sm">${escHtml(prev)}${(p.details||'').length>80?'…':''}</td>
+        <td style="white-space:nowrap">
+          <button type="button" class="btn btn-ghost btn-sm" onclick="openPaymentAccountModal(${p.id})">Edit</button>
+          <button type="button" class="btn btn-danger btn-sm" onclick="deletePaymentAccount(${p.id})">Delete</button>
+        </td>
+      </tr>`;
+    }).join('');
+  }catch(e){
+    tbody.innerHTML=`<tr><td colspan="3"><div class="empty-state"><p>${escHtml(e.message||'Could not load')}</p></div></td></tr>`;
+  }
+}
+
+async function openPaymentAccountModal(id){
+  document.getElementById('payment-account-modal-title').textContent=id?'Edit payment account':'Add payment account';
+  document.getElementById('pa-id').value=id||'';
+  document.getElementById('pa-label').value='';
+  document.getElementById('pa-order').value='0';
+  document.getElementById('pa-details').value='';
+  if(id){
+    try{
+      const rows=await api.get('/api/payment-accounts');
+      const p=rows.find(x=>Number(x.id)===Number(id));
+      if(p){
+        document.getElementById('pa-label').value=p.label||'';
+        document.getElementById('pa-order').value=String(p.display_order??0);
+        document.getElementById('pa-details').value=p.details||'';
+      }
+    }catch(_){}
+  }
+  openModal('payment-account-modal');
+}
+
+async function savePaymentAccount(){
+  const id=document.getElementById('pa-id').value.trim();
+  const label=document.getElementById('pa-label').value.trim();
+  const details=document.getElementById('pa-details').value.trim();
+  const display_order=parseInt(document.getElementById('pa-order').value,10)||0;
+  if(!label||!details)return showToast('Label and details are required','error');
+  try{
+    if(id){
+      await api.put(`/api/payment-accounts/${id}`,{label,details,display_order});
+      showToast('Payment account updated.','success');
+    }else{
+      await api.post('/api/payment-accounts',{label,details,display_order});
+      showToast('Payment account added.','success');
+    }
+    closeModal('payment-account-modal');
+    await loadPaymentAccountsList();
+  }catch(err){showToast(err.message,'error');}
+}
+
+async function deletePaymentAccount(id){
+  if(!confirm('Delete this payment account? Invoices using it will no longer show these details on new PDFs.'))return;
+  try{
+    await api.delete(`/api/payment-accounts/${id}`);
+    showToast('Deleted.','success');
+    await loadPaymentAccountsList();
+  }catch(err){showToast(err.message,'error');}
+}
+
+async function uploadLogo(input){
+  const file=input.files[0];if(!file)return;
+  const fd=new FormData();fd.append('logo',file);
+  try{
+    const res=await api.postForm('/api/upload/logo',fd);
+    const path=res.logoPath||res.logo_path||'';
+    document.getElementById('logo-preview').innerHTML=`<img src="${escHtml(path)}?t=${Date.now()}" alt="" style="width:100%;height:100%;object-fit:contain;padding:4px">`;
+    setRemoveLogoButtonVisible(true);
+    showToast('Logo saved. It will appear on PDF headers.','success');
+  }catch(err){showToast(err.message,'error');}
+  input.value='';
+}
+
+async function loadAgents(){
+  allClients=await api.get('/api/clients').catch(()=>[]);
+  allAgents=await api.get('/api/agents').catch(()=>[]);
+  const tbody=document.getElementById('agents-tbody');
+  if(!allAgents.length){tbody.innerHTML='<tr><td colspan="6"><div class="empty-state"><p>No agents yet.</p></div></td></tr>';return;}
+  tbody.innerHTML=allAgents.map(a=>{
+    const clients=a.client_names?a.client_names.split('||').filter(Boolean):[];
+    return `<tr>
+      <td><strong>${escHtml(a.full_name||a.username)}</strong></td>
+      <td><span class="text-mono text-sm">${escHtml(a.username)}</span></td>
+      <td>${escHtml(a.email||'—')}</td>
+      <td>${clients.length?clients.map(c=>`<span class="badge" style="background:rgba(59,130,246,0.1);color:#3b82f6;margin:2px">${escHtml(c)}</span>`).join(''):'<span class="text-muted text-sm">None</span>'}</td>
+      <td><span class="badge ${a.is_active?'badge-finalized':'badge-draft'}">${a.is_active?'Active':'Inactive'}</span></td>
+      <td><div style="display:flex;gap:4px">
+        <button class="btn btn-ghost btn-sm" onclick="editAgent(${a.id})">Edit</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteAgent(${a.id})">Del</button>
+      </div></td></tr>`;
+  }).join('');
+}
+
+function resetAgentForm(){
+  editingAgentId=null;
+  document.getElementById('agent-modal-title').textContent='Add Agent';
+  ['agent-id','agent-fullname','agent-username','agent-email','agent-password'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('agent-username').disabled=false;
+  document.getElementById('agent-pwd-label').textContent='Password *';
+  renderClientCheckboxes([]);
+}
+
+function renderClientCheckboxes(selectedIds){
+  const container=document.getElementById('agent-client-checkboxes');
+  if(!allClients.length){container.innerHTML='<span class="text-muted text-sm">No clients yet.</span>';return;}
+  container.innerHTML=allClients.map(c=>`<label style="display:flex;align-items:center;gap:6px;padding:6px 10px;border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:13px;background:var(--bg-input)">
+    <input type="checkbox" value="${c.id}" ${selectedIds.includes(c.id)?'checked':''} style="accent-color:var(--red)">${escHtml(c.company_name)}</label>`).join('');
+}
+
+async function editAgent(id){
+  editingAgentId=id;
+  const agent=allAgents.find(a=>a.id===id);
+  const assignments=await api.get(`/api/agents/${id}/assignments`).catch(()=>[]);
+  const selectedIds=assignments.map(a=>a.id);
+  document.getElementById('agent-modal-title').textContent='Edit Agent';
+  document.getElementById('agent-id').value=id;
+  document.getElementById('agent-fullname').value=agent.full_name||'';
+  document.getElementById('agent-username').value=agent.username;
+  document.getElementById('agent-username').disabled=true;
+  document.getElementById('agent-email').value=agent.email||'';
+  document.getElementById('agent-password').value='';
+  document.getElementById('agent-pwd-label').textContent='New Password (blank=no change)';
+  renderClientCheckboxes(selectedIds);
+  openModal('agent-modal');
+}
+
+async function saveAgent(){
+  const username=document.getElementById('agent-username').value.trim();
+  const fullName=document.getElementById('agent-fullname').value.trim();
+  const email=document.getElementById('agent-email').value.trim();
+  const password=document.getElementById('agent-password').value;
+  const clientIds=[...document.querySelectorAll('#agent-client-checkboxes input:checked')].map(el=>+el.value);
+  if(!username)return showToast('Username required','error');
+  try{
+    let agentId=editingAgentId;
+    if(editingAgentId){
+      const payload={full_name:fullName,email,is_active:1};
+      if(password)payload.password=password;
+      await api.put(`/api/agents/${editingAgentId}`,payload);
+    }else{
+      if(!password)return showToast('Password required','error');
+      const res=await api.post('/api/agents',{username,password,full_name:fullName,email});
+      agentId=res.id;
+    }
+    await api.post(`/api/agents/${agentId}/assignments`,{client_ids:clientIds});
+    closeModal('agent-modal');showToast(editingAgentId?'Agent updated!':'Agent created!','success');loadAgents();
+  }catch(err){showToast(err.message,'error');}
+}
+
+async function deleteAgent(id){if(!confirm('Deactivate agent?'))return;try{await api.delete(`/api/agents/${id}`);showToast('Agent deactivated','success');loadAgents();}catch(err){showToast(err.message,'error');}}
+
+async function loadClients(){
+  allClients=await api.get('/api/clients').catch(()=>[]);
+  const tbody=document.getElementById('clients-tbody');
+  if(!allClients.length){tbody.innerHTML='<tr><td colspan="5"><div class="empty-state"><p>No clients yet.</p></div></td></tr>';return;}
+  tbody.innerHTML=allClients.map(c=>`<tr>
+    <td><strong>${escHtml(c.contact_name)}</strong></td>
+    <td>${escHtml(c.company_name)}</td>
+    <td>${escHtml(c.email||'—')}</td>
+    <td>${escHtml(c.phone||'—')}</td>
+    <td><div style="display:flex;gap:4px">
+      <button class="btn btn-ghost btn-sm" onclick="editClient(${c.id})">Edit</button>
+      <button class="btn btn-danger btn-sm" onclick="deleteClient(${c.id})">Del</button>
+    </div></td></tr>`).join('');
+}
+
+function resetClientForm(){
+  editingClientId=null;
+  document.getElementById('client-modal-title').textContent='Add Client';
+  ['client-id','cl-contact','cl-company','cl-email','cl-phone'].forEach(id=>document.getElementById(id).value='');
+}
+
+function editClient(id){
+  editingClientId=id;const c=allClients.find(x=>x.id===id);
+  document.getElementById('client-modal-title').textContent='Edit Client';
+  document.getElementById('client-id').value=id;
+  document.getElementById('cl-contact').value=c.contact_name||'';
+  document.getElementById('cl-company').value=c.company_name||'';
+  document.getElementById('cl-email').value=c.email||'';
+  document.getElementById('cl-phone').value=c.phone||'';
+  openModal('client-modal');
+}
+
+async function saveClient(){
+  const payload={
+    contact_name:document.getElementById('cl-contact').value.trim(),
+    company_name:document.getElementById('cl-company').value.trim(),
+    email:document.getElementById('cl-email').value.trim(),
+    phone:document.getElementById('cl-phone').value.trim()
+  };
+  if(!payload.contact_name||!payload.company_name)return showToast('Contact and company name required','error');
+  try{if(editingClientId)await api.put(`/api/clients/${editingClientId}`,payload);else await api.post('/api/clients',payload);closeModal('client-modal');showToast(editingClientId?'Client updated!':'Client created!','success');loadClients();}
+  catch(err){showToast(err.message,'error');}
+}
+
+async function deleteClient(id){if(!confirm('Delete client?'))return;try{await api.delete(`/api/clients/${id}`);showToast('Removed','success');loadClients();}catch(err){showToast(err.message,'error');}}
+
+async function loadTemplates(){
+  allTemplates=await api.get('/api/templates/tables').catch(()=>[]);
+  const container=document.getElementById('templates-container');
+  if(!allTemplates.length){container.innerHTML='<div class="card"><div class="card-body"><div class="empty-state"><p>No tables yet.</p></div></div></div>';return;}
+  container.innerHTML=allTemplates.map(t=>`
+    <div class="card" style="margin-bottom:20px">
+      <div class="card-header">
+        <span class="card-title">${escHtml(t.name)}</span>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-secondary btn-sm" onclick="openAddColumnModal(${t.id})">+ Add Column</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteTable(${t.id})">Delete Table</button>
+        </div>
+      </div>
+      <div class="table-responsive"><table class="data-table">
+        <thead><tr><th>#</th><th>Label</th><th>Field Name</th><th>Type</th><th>Actions</th></tr></thead>
+        <tbody>${t.columns.length?t.columns.map(c=>`<tr>
+          <td style="width:50px">${(c.display_order ?? 0) + 1}</td>
+          <td><strong>${escHtml(c.label)}</strong></td>
+          <td><span class="text-mono text-sm">${escHtml(c.name)}</span></td>
+          <td><span class="badge" style="background:var(--red-muted);color:var(--red)">${c.col_type}</span></td>
+          <td><div style="display:flex;gap:4px">
+            <button class="btn btn-ghost btn-sm" title="Move up" onclick="moveColumn(${c.id}, ${t.id}, -1)">↑</button>
+            <button class="btn btn-ghost btn-sm" title="Move down" onclick="moveColumn(${c.id}, ${t.id}, 1)">↓</button>
+            <button class="btn btn-ghost btn-sm" onclick="editColumnById(${c.id})">Edit</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteColumn(${c.id})">Del</button>
+          </div></td></tr>`).join(''):'<tr><td colspan="5"><div class="empty-state" style="padding:16px"><p>No columns yet.</p></div></td></tr>'}
+        </tbody>
+      </table></div>
+    </div>`).join('');
+}
+
+async function saveTable(){const name=document.getElementById('new-table-name').value.trim();if(!name)return showToast('Name required','error');try{await api.post('/api/templates/tables',{name});closeModal('table-modal');document.getElementById('new-table-name').value='';showToast('Table created!','success');loadTemplates();}catch(err){showToast(err.message,'error');}}
+async function deleteTable(id){if(!confirm('Delete table?'))return;try{await api.delete(`/api/templates/tables/${id}`);showToast('Deleted','success');loadTemplates();}catch(err){showToast(err.message,'error');}}
+
+function colTypeToSelect(dbType,fieldName){
+  const n=(fieldName||'').toLowerCase();
+  if(dbType==='text'&&(n==='rate'||n==='dispatcher_fee'||n==='dispatch_fee'||n.includes('line_haul')))return'mixed';
+  return dbType==='number'?'number':'text';
+}
+
+function editColumnById(columnId){
+  for(const t of allTemplates){
+    const c=t.columns.find(x=>x.id===columnId);
+    if(c){editColumn(c.id,t.id,c.label,c.col_type,c.name,c.display_order);return;}
+  }
+}
+
+function openAddColumnModal(tableId){
+  editingColId=null;
+  document.getElementById('col-modal-title').textContent='Add Column';
+  document.getElementById('col-table-id').value=tableId;
+  document.getElementById('col-id').value='';
+  document.getElementById('col-display-order').value='';
+  document.getElementById('col-label').value='';
+  document.getElementById('col-name').value='';
+  document.getElementById('col-type').value='text';
+  document.getElementById('col-name').disabled=false;
+  openModal('column-modal');
+}
+
+function editColumn(id,tableId,label,type,name,displayOrder){
+  editingColId=id;
+  document.getElementById('col-modal-title').textContent='Edit Column';
+  document.getElementById('col-table-id').value=tableId;
+  document.getElementById('col-id').value=id;
+  document.getElementById('col-display-order').value=displayOrder ?? '';
+  document.getElementById('col-label').value=label;
+  document.getElementById('col-name').value=name;
+  document.getElementById('col-type').value=colTypeToSelect(type,name);
+  document.getElementById('col-name').disabled=false;
+  openModal('column-modal');
+}
+
+async function saveColumn(){
+  const tableId=document.getElementById('col-table-id').value;
+  const label=document.getElementById('col-label').value.trim();
+  const name=document.getElementById('col-name').value.trim().replace(/\s+/g,'_').toLowerCase();
+  const colType=document.getElementById('col-type').value;
+  const displayOrder=document.getElementById('col-display-order').value;
+  if(!label||!name)return showToast('Label and field name required','error');
+  try{
+    if(editingColId)await api.put(`/api/templates/columns/${editingColId}`,{name,label,col_type:colType,display_order:displayOrder});
+    else await api.post('/api/templates/columns',{table_id:tableId,name,label,col_type:colType});
+    closeModal('column-modal');showToast(editingColId?'Updated!':'Added!','success');loadTemplates();
+  }catch(err){showToast(err.message,'error');}
+}
+
+async function moveColumn(columnId, tableId, delta){
+  const t=allTemplates.find(x=>x.id===tableId);
+  if(!t)return;
+  const cols=[...(t.columns||[])].sort((a,b)=>(a.display_order||0)-(b.display_order||0));
+  const idx=cols.findIndex(c=>c.id===columnId);
+  if(idx<0)return;
+  const swapIdx=idx+delta;
+  if(swapIdx<0||swapIdx>=cols.length)return;
+  const a=cols[idx],b=cols[swapIdx];
+  try{
+    await Promise.all([
+      api.put(`/api/templates/columns/${a.id}`,{name:a.name,label:a.label,col_type:colTypeToSelect(a.col_type,a.name),display_order:b.display_order}),
+      api.put(`/api/templates/columns/${b.id}`,{name:b.name,label:b.label,col_type:colTypeToSelect(b.col_type,b.name),display_order:a.display_order})
+    ]);
+    showToast('Column order updated','success');
+    loadTemplates();
+  }catch(err){showToast(err.message,'error');}
+}
+
+async function deleteColumn(id){if(!confirm('Delete column?'))return;try{await api.delete(`/api/templates/columns/${id}`);showToast('Deleted','success');loadTemplates();}catch(err){showToast(err.message,'error');}}
+
+async function loadInvoices(){
+  const tbody=document.getElementById('invoices-tbody');
+  const qEl=document.getElementById('admin-invoices-search');
+  const q=qEl&&qEl.value?qEl.value.trim():'';
+  try{
+    const url=q?`/api/invoices?q=${encodeURIComponent(q)}`:'/api/invoices';
+    const invoices=await api.get(url);
+    if(!invoices.length){tbody.innerHTML='<tr><td colspan="6"><div class="empty-state"><p>'+(q?'No invoices match your search.':'No invoices yet')+'</p></div></td></tr>';return;}
+    tbody.innerHTML=invoices.map(inv=>{
+      const agentLabel=escHtml(inv.agent_name||inv.agent_username||'—');
+      return `<tr>
+    <td><span class="text-mono text-sm">${escHtml(inv.invoice_number||'—')}</span></td>
+    <td>${agentLabel}</td>
+    <td>${escHtml(inv.client_company||'No client')}</td>
+    <td>${formatDate(inv.invoice_date)}</td>
+    <td><span class="badge badge-${inv.status}">${inv.status}</span></td>
+    <td style="white-space:nowrap"><button type="button" class="btn btn-ghost btn-sm" onclick='openAdminInvoiceView(${JSON.stringify(inv.id)})'>View</button> <button type="button" class="btn btn-primary btn-sm" onclick='downloadAdminInvoicePdf(${JSON.stringify(inv.id)})'>Download</button></td>
+  </tr>`;}).join('');
+  }catch(err){
+    showToast('Could not load invoices: '+err.message,'error');
+    tbody.innerHTML='<tr><td colspan="6"><div class="empty-state"><p>Failed to load. Check you are logged in as admin and refresh.</p></div></td></tr>';
+  }
+}
+
+async function loadClientInvoicesPage(){
+  const sel=document.getElementById('client-invoice-filter');
+  try{
+    const clients=await api.get('/api/clients');
+    const keep=sel.value;
+    sel.innerHTML='<option value="">— Select a client —</option>'+clients.map(c=>`<option value="${c.id}">${escHtml(c.company_name)}</option>`).join('');
+    if(keep)sel.value=keep;
+  }catch(e){showToast('Could not load clients','error');}
+  loadInvoicesForClient();
+}
+
+async function loadInvoicesForClient(){
+  const id=document.getElementById('client-invoice-filter').value;
+  const tbody=document.getElementById('client-invoices-tbody');
+  const title=document.getElementById('client-invoices-list-title');
+  if(!id){
+    title.textContent='Invoices';
+    tbody.innerHTML='<tr><td colspan="6"><div class="empty-state"><p>Select a client to see their invoices</p></div></td></tr>';
+    return;
+  }
+  const opt=document.getElementById('client-invoice-filter').selectedOptions[0];
+  title.textContent='Invoices — '+(opt?opt.textContent:'');
+  const qEl=document.getElementById('client-invoices-search');
+  const q=qEl&&qEl.value?qEl.value.trim():'';
+  try{
+    let listUrl='/api/invoices?client_id='+encodeURIComponent(id);
+    if(q)listUrl+='&q='+encodeURIComponent(q);
+    const list=await api.get(listUrl);
+    if(!list.length){
+      tbody.innerHTML='<tr><td colspan="6"><div class="empty-state"><p>'+(q?'No invoices match your search for this client.':'No invoices for this client yet')+'</p></div></td></tr>';
+      return;
+    }
+    tbody.innerHTML=list.map(inv=>{
+      const agentLabel=escHtml(inv.agent_name||inv.agent_username||'—');
+      return`<tr>
+        <td><span class="text-mono text-sm">${escHtml(inv.invoice_number||'—')}</span></td>
+        <td>${agentLabel}</td>
+        <td>${formatDate(inv.invoice_date)}</td>
+        <td><span class="badge badge-${inv.status}">${inv.status}</span></td>
+        <td style="white-space:nowrap"><button type="button" class="btn btn-ghost btn-sm" onclick='openAdminInvoiceView(${JSON.stringify(inv.id)})'>View</button> <button type="button" class="btn btn-primary btn-sm" onclick='downloadAdminInvoicePdf(${JSON.stringify(inv.id)})'>Download</button></td>
+      </tr>`;
+    }).join('');
+  }catch(err){
+    showToast('Could not load invoices: '+err.message,'error');
+    tbody.innerHTML='<tr><td colspan="6"><div class="empty-state"><p>Error loading list</p></div></td></tr>';
+  }
+}
+
+async function downloadAdminInvoicePdf(draftId){
+  if(!draftId)return;
+  if(typeof window.generateInvoicePdfFromExportData!=='function'){
+    showToast('PDF export is not available. Refresh the page and try again.','error');
+    return;
+  }
+  try{
+    showToast('Preparing PDF…','info');
+    const data=await api.get('/api/invoices/'+encodeURIComponent(draftId)+'/export-data');
+    await window.generateInvoicePdfFromExportData(data);
+    showToast('Invoice PDF downloaded','success');
+  }catch(e){
+    showToast('Could not download PDF: '+e.message,'error');
+  }
+}
+
+async function openAdminInvoiceView(draftId){
+  try{
+    document.getElementById('invoice-view-modal').dataset.draftId=String(draftId||'');
+    const [draft,tables]=await Promise.all([
+      api.get('/api/invoices/'+encodeURIComponent(draftId)),
+      api.get('/api/templates/tables')
+    ]);
+    const clientLine=draft.client_id
+      ?`${escHtml(draft.client_company||'')} <span class="text-muted">(${escHtml(draft.client_name||'')})</span>`
+      :'<span class="text-muted">No client assigned</span>';
+    const pa=draft.payment_account;
+    const payBlock=pa&&pa.label
+      ?`<div><span class="text-muted">Payment (PDF)</span> <strong>${escHtml(pa.label)}</strong>${pa.details?`<div class="text-sm" style="margin-top:6px;white-space:pre-wrap;color:var(--text-secondary)">${escHtml(pa.details)}</div>`:''}</div>`
+      :'<div><span class="text-muted">Payment (PDF)</span> <span class="text-muted">None</span></div>';
+    let body=`<div style="margin-bottom:18px;display:grid;gap:10px;font-size:14px;border-bottom:1px solid var(--border);padding-bottom:14px">
+      <div><span class="text-muted">Invoice #</span> <strong class="text-mono">${escHtml(draft.invoice_number||'—')}</strong></div>
+      <div><span class="text-muted">Date</span> ${formatDate(draft.invoice_date)}</div>
+      <div><span class="text-muted">Client</span> ${clientLine}</div>
+      <div><span class="text-muted">Agent</span> ${escHtml(draft.agent_name||draft.agent_username||'—')}</div>
+      ${payBlock}
+      <div><span class="text-muted">Status</span> <span class="badge badge-${draft.status}">${draft.status}</span></div>
+    </div>`;
+    const rowsByTable={};
+    const fallbackTid=tables[0]&&tables[0].id;
+    (draft.rows||[]).forEach(r=>{
+      let tid=r.table_id;
+      if(tid==null&&fallbackTid!=null)tid=fallbackTid;
+      if(tid==null)return;
+      if(!rowsByTable[tid])rowsByTable[tid]=[];
+      rowsByTable[tid].push(r);
+    });
+    let any=false;
+    tables.forEach(t=>{
+      const rs=rowsByTable[t.id];
+      if(!rs||!rs.length)return;
+      any=true;
+      body+=`<h4 style="margin:18px 0 10px;font-size:14px;font-weight:700">${escHtml(t.name)}</h4>`;
+      const cols=t.columns||[];
+      body+='<div class="table-responsive" style="margin-bottom:8px"><table class="data-table"><thead><tr>'+cols.map(c=>`<th>${escHtml(c.label)}</th>`).join('')+'</tr></thead><tbody>';
+      rs.sort((a,b)=>(a.row_order||0)-(b.row_order||0)).forEach(r=>{
+        let rd=r.row_data||{};
+        if(typeof rd==='string'){try{rd=JSON.parse(rd);}catch(_){rd={};}}
+        body+='<tr>'+cols.map(c=>`<td style="font-size:13px">${escHtml(String(rd[c.name]!=null?rd[c.name]:''))}</td>`).join('')+'</tr>';
+      });
+      body+='</tbody></table></div>';
+    });
+    if(!any)body+='<p class="text-muted" style="padding:12px 0">No line items on this invoice.</p>';
+    document.getElementById('invoice-view-body').innerHTML=body;
+    document.getElementById('invoice-view-title').textContent='Invoice — '+(draft.invoice_number||'Draft');
+    openModal('invoice-view-modal');
+  }catch(e){
+    showToast('Could not load invoice: '+e.message,'error');
+  }
+}
+
+init();
+</script>
+</body>
+</html>

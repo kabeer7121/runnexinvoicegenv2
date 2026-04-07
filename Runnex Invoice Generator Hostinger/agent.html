@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Runnex Logistics Invoice Generator — Agent</title>
+  <link rel="icon" href="/assets/favicon.png" type="image/png">
+  <link rel="apple-touch-icon" href="/assets/favicon.png">
+  <link rel="stylesheet" href="/css/main.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+</head>
+<body>
+<div class="app-shell">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-mark">
+        <div class="logo-icon">RL</div>
+        <div>
+          <div class="logo-text">RUNNEX</div>
+          <div class="logo-sub">Invoice Generator · Agent</div>
+        </div>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Invoices</div>
+      <a class="nav-item active" id="nav-new" onclick="showSection('new')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+        New Invoice
+      </a>
+      <a class="nav-item" id="nav-drafts" onclick="showSection('drafts')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+        My Drafts
+      </a>
+      <a class="nav-item" id="nav-reports" onclick="showSection('reports')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><rect x="7" y="10" width="3" height="7"/><rect x="12" y="7" width="3" height="10"/><rect x="17" y="5" width="3" height="12"/></svg>
+        Client Reports
+      </a>
+    </nav>
+    <div class="sidebar-footer">
+      <div id="user-chip-container"></div>
+    </div>
+  </aside>
+  <div class="sidebar-backdrop" id="sidebar-backdrop" onclick="closeMobileSidebar()" aria-hidden="true"></div>
+
+  <!-- MAIN -->
+  <div class="main-content">
+    <header class="top-bar">
+      <div class="top-bar-left">
+        <button type="button" class="btn btn-ghost btn-sm sidebar-menu-btn" id="sidebar-toggle" onclick="toggleMobileSidebar()" style="display:none" aria-label="Open menu">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+        <span class="page-title" id="page-title">New Invoice</span>
+        <span id="draft-status-badge"></span>
+      </div>
+      <div class="top-bar-right top-bar-actions">
+        <button id="btn-new-invoice" class="btn btn-secondary btn-sm" onclick="newInvoice()" style="display:none">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          New Invoice
+        </button>
+        <button id="btn-save-draft" class="btn btn-secondary btn-sm" onclick="saveDraft()" style="display:none">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+          Save Draft
+        </button>
+        <button id="btn-export-pdf" class="btn btn-primary btn-sm" onclick="exportPDF()" style="display:none">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Export PDF
+        </button>
+        <button id="theme-toggle" class="theme-toggle" onclick="toggleTheme()">Dark</button>
+      </div>
+    </header>
+
+    <div class="page-content">
+      <input type="hidden" id="current-draft-id">
+
+      <!-- =================== NEW INVOICE SECTION =================== -->
+      <section id="section-new" class="section">
+
+        <!-- Row 1: Client + Invoice Meta -->
+        <div class="form-grid mb-4">
+          <!-- Client -->
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                Bill To
+              </span>
+            </div>
+            <div class="card-body">
+              <div class="form-group">
+                <label class="form-label">Select Client</label>
+                <select class="form-control" id="client-select" onchange="onClientSelect()">
+                  <option value="">— Select Client —</option>
+                </select>
+              </div>
+              <div id="client-info-row" style="display:none">
+                <div class="client-info-grid">
+                  <div style="font-size:12px">
+                    <div style="color:var(--text-muted);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">Contact</div>
+                    <div id="ci-contact" style="font-weight:600;color:var(--text-primary)"></div>
+                  </div>
+                  <div style="font-size:12px">
+                    <div style="color:var(--text-muted);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">Company</div>
+                    <div id="ci-company" style="font-weight:600;color:var(--text-primary)"></div>
+                  </div>
+                  <div style="font-size:12px">
+                    <div style="color:var(--text-muted);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">Email</div>
+                    <div id="ci-email" style="color:var(--text-secondary)"></div>
+                  </div>
+                  <div style="font-size:12px">
+                    <div style="color:var(--text-muted);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">Phone</div>
+                    <div id="ci-phone" style="color:var(--text-secondary)"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Invoice Meta -->
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                Invoice Details
+              </span>
+            </div>
+            <div class="card-body">
+              <div class="form-group">
+                <label class="form-label">Invoice Number</label>
+                <input type="text" class="form-control" id="invoice-number" placeholder="INV-000001">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Invoice Date</label>
+                <input type="date" class="form-control" id="invoice-date">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Payment account (PDF)</label>
+                <select class="form-control" id="payment-account-select">
+                  <option value="">— None —</option>
+                </select>
+                <p class="text-muted text-sm" style="margin-top:6px;margin-bottom:0">Shown bottom-left on the exported PDF so clients know where to pay.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- RateCon Upload -->
+        <div class="card mb-4">
+          <div class="card-header">
+            <span class="card-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              Upload RateCon PDF
+            </span>
+            <span style="font-size:12px;color:var(--text-muted)">Extracts origin, destination, miles, rate (Claude)</span>
+          </div>
+          <div class="card-body">
+            <div class="upload-zone" id="upload-zone"
+              onclick="document.getElementById('pdf-file-input').click()"
+              ondrop="onFileDrop(event)"
+              ondragover="event.preventDefault();this.classList.add('dragover')"
+              ondragleave="this.classList.remove('dragover')">
+              <div class="upload-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="40" height="40"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              </div>
+              <div class="upload-title">Drop RateCon PDFs here or click to browse</div>
+              <div class="upload-sub">Up to 15 PDFs at once, 20MB each — auto-extracts load data</div>
+            </div>
+            <input type="file" id="pdf-file-input" accept=".pdf,application/pdf" multiple style="display:none" onchange="onFileSelect(this)">
+            <div id="parse-status"></div>
+            <div id="batch-parse-panel" class="card mb-4" style="display:none;margin-top:16px"></div>
+          </div>
+        </div>
+
+        <!-- Extraction Results -->
+        <div id="extraction-results" class="card mb-4" style="display:none">
+          <div class="card-header">
+            <span class="card-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              Extracted Data — Review &amp; Edit
+            </span>
+            <button class="btn btn-primary btn-sm" onclick="applyExtracted()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Add as Row
+            </button>
+          </div>
+          <div class="card-body">
+            <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px">Review extracted values below (route, miles, rate, load ID, broker, commodity, weight, etc.). <strong>Dispatcher fee is not copied from the PDF</strong>—enter it in the invoice table. Weight is stored as numbers only (no LBS/KG). Confidence bars show extraction certainty.</p>
+            <div id="extraction-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px"></div>
+          </div>
+        </div>
+
+        <!-- Invoice Tables -->
+        <div id="invoice-tables-container"></div>
+
+        <!-- Totals Summary -->
+        <div id="totals-card" class="card" style="display:none">
+          <div class="card-header">
+            <span class="card-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+              Invoice Summary
+            </span>
+            <span style="font-size:11px;color:var(--text-muted)">Optional: override loads and dispatch fee for the PDF</span>
+          </div>
+          <div class="card-body" style="padding:16px">
+            <div class="form-grid" style="grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+              <div class="form-group" style="margin:0">
+                <label class="form-label">Load count override (optional)</label>
+                <input type="text" id="load-count-override" class="form-control" inputmode="numeric" placeholder="e.g. 12" oninput="updateTotals()">
+              </div>
+              <div class="form-group" style="margin:0">
+                <label class="form-label">Dispatch fee override (optional)</label>
+                <input type="text" id="dispatch-fee-override" class="form-control" inputmode="decimal" placeholder="e.g. 1500 or $1,500.00" oninput="updateTotals()">
+              </div>
+              <div class="form-group" style="margin:0;display:flex;align-items:flex-end">
+                <button type="button" class="btn btn-ghost" onclick="document.getElementById('load-count-override').value='';updateTotals()">Clear load override</button>
+              </div>
+              <div class="form-group" style="margin:0;display:flex;align-items:flex-end">
+                <button type="button" class="btn btn-ghost" onclick="document.getElementById('dispatch-fee-override').value='';updateTotals()">Clear override</button>
+              </div>
+            </div>
+            <div id="totals-grid" class="stats-grid"></div>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- =================== DRAFTS SECTION =================== -->
+      <section id="section-drafts" class="section" style="display:none">
+        <div class="card">
+          <div class="card-header" style="flex-wrap:wrap;gap:12px;align-items:flex-end">
+            <span class="card-title">My Invoices</span>
+            <div class="form-group" style="margin:0;flex:1;min-width:200px;max-width:360px">
+              <label class="form-label" style="margin-bottom:4px">Search invoice number</label>
+              <input type="search" id="agent-invoices-search" class="form-control" placeholder="Type part of your invoice #" autocomplete="off">
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="newInvoice()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              New Invoice
+            </button>
+          </div>
+          <div id="drafts-container" style="padding:8px"></div>
+        </div>
+      </section>
+
+      <!-- =================== REPORTS SECTION =================== -->
+      <section id="section-reports" class="section" style="display:none">
+        <div class="card mb-4">
+          <div class="card-header">
+            <span class="card-title">Client week-by-week data</span>
+          </div>
+          <div class="card-body report-filters-grid">
+            <div class="form-group" style="margin:0">
+              <label class="form-label">Client</label>
+              <select class="form-control" id="report-client-select">
+                <option value="">— Select Client —</option>
+              </select>
+            </div>
+            <div class="form-group" style="margin:0">
+              <label class="form-label">From</label>
+              <input type="date" id="report-from" class="form-control">
+            </div>
+            <div class="form-group" style="margin:0">
+              <label class="form-label">To</label>
+              <input type="date" id="report-to" class="form-control">
+            </div>
+            <button class="btn btn-primary" onclick="loadClientReport()">View All Data</button>
+            <button class="btn btn-secondary" id="btn-export-report-csv" onclick="exportClientReportCsv()" disabled>Export CSV</button>
+          </div>
+        </div>
+        <div class="card mb-4">
+          <div class="card-header"><span class="card-title">Weekly summary</span></div>
+          <div id="weekly-report-container" style="padding:8px"></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">All loads</span></div>
+          <div id="rows-report-container" style="padding:8px"></div>
+        </div>
+      </section>
+
+    </div><!-- end page-content -->
+  </div><!-- end main-content -->
+</div><!-- end app-shell -->
+
+<style>
+  .calc-fab {
+    position: fixed;
+    right: 16px;
+    bottom: 20px;
+    z-index: 1200;
+    width: 48px;
+    height: 48px;
+    border-radius: 999px;
+    border: 1px solid rgba(200, 16, 46, 0.35);
+    background: linear-gradient(145deg, var(--red, #C8102E), var(--red-dark, #a00d24));
+    color: #fff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: var(--shadow-lg, 0 10px 24px rgba(0, 0, 0, 0.18));
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .calc-fab:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 14px 28px rgba(200, 16, 46, 0.35);
+  }
+  .calc-fab:active { transform: translateY(0); }
+  .calc-pop {
+    position: fixed;
+    right: 16px;
+    bottom: 80px;
+    z-index: 1201;
+    width: min(300px, calc(100vw - 24px));
+    border-radius: 14px;
+    border: 1px solid var(--border, #e5e7eb);
+    background: var(--bg-card, #ffffff);
+    box-shadow: var(--shadow-lg, 0 16px 40px rgba(0, 0, 0, 0.2));
+    padding: 12px 12px 14px;
+    display: none;
+    outline: none;
+  }
+  .calc-pop:focus-visible {
+    box-shadow: 0 0 0 2px var(--bg-card, #fff), 0 0 0 4px var(--red, #C8102E), var(--shadow-lg, 0 16px 40px rgba(0,0,0,0.2));
+  }
+  .calc-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .calc-title-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+  .calc-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-primary, #111827);
+    letter-spacing: 0.02em;
+  }
+  .calc-hint {
+    font-size: 10px;
+    color: var(--text-muted, #9ca3af);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .calc-display-wrap {
+    margin-bottom: 10px;
+  }
+  .calc-display {
+    width: 100%;
+    height: 48px;
+    border-radius: 10px;
+    border: 1px solid var(--border, #e5e7eb);
+    background: var(--bg-input, #ffffff);
+    color: var(--text-primary, #111827);
+    padding: 0 14px;
+    text-align: right;
+    font-size: 22px;
+    font-variant-numeric: tabular-nums;
+    font-family: 'DM Mono', ui-monospace, monospace;
+  }
+  .calc-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+  .calc-key {
+    border: 1px solid var(--border, #e5e7eb);
+    border-radius: 10px;
+    height: 42px;
+    background: var(--bg, #f5f5f5);
+    color: var(--text-primary, #111827);
+    cursor: pointer;
+    font-size: 15px;
+    font-weight: 600;
+    transition: background 0.12s ease, transform 0.08s ease;
+    font-family: inherit;
+  }
+  .calc-key:hover {
+    filter: brightness(0.97);
+  }
+  .calc-key:active {
+    transform: scale(0.96);
+  }
+  .calc-key.op {
+    background: var(--gray-100, #f3f4f6);
+    color: var(--text-secondary, #6b7280);
+  }
+  .calc-key.eq {
+    background: var(--red, #C8102E);
+    color: #fff;
+    border-color: transparent;
+  }
+  .calc-key.eq:hover {
+    filter: brightness(1.05);
+  }
+  [data-theme="dark"] .calc-key.op {
+    background: var(--bg-input, #242424);
+    color: var(--text-secondary, #9ca3af);
+  }
+  [data-theme="dark"] .calc-key:not(.op):not(.eq) {
+    background: #1f1f1f;
+  }
+</style>
+
+<button id="calc-fab" class="calc-fab" type="button" title="Calculator" aria-label="Open calculator" onclick="toggleCalculator()">
+  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+    <rect x="5" y="2.5" width="14" height="19" rx="2"></rect>
+    <rect x="8" y="5.5" width="8" height="3"></rect>
+    <line x1="8" y1="12" x2="10" y2="12"></line>
+    <line x1="12" y1="12" x2="14" y2="12"></line>
+    <line x1="16" y1="12" x2="16" y2="12"></line>
+    <line x1="8" y1="15.5" x2="10" y2="15.5"></line>
+    <line x1="12" y1="15.5" x2="14" y2="15.5"></line>
+    <line x1="16" y1="15.5" x2="16" y2="15.5"></line>
+    <line x1="8" y1="19" x2="10" y2="19"></line>
+    <line x1="12" y1="19" x2="14" y2="19"></line>
+    <line x1="16" y1="19" x2="16" y2="19"></line>
+  </svg>
+</button>
+
+<div id="calc-pop" class="calc-pop" tabindex="-1" role="dialog" aria-label="Calculator" aria-hidden="true">
+  <div class="calc-head">
+    <div class="calc-title-wrap">
+      <span class="calc-title">Calculator</span>
+      <span class="calc-hint">Type or numpad · Esc to close</span>
+    </div>
+    <button class="btn btn-ghost btn-sm" type="button" onclick="closeCalculator()" aria-label="Close calculator">✕</button>
+  </div>
+  <div class="calc-display-wrap">
+    <input id="calc-display" class="calc-display" type="text" value="0" readonly inputmode="none" autocomplete="off" aria-readonly="true">
+  </div>
+  <div class="calc-grid">
+    <button class="calc-key op" type="button" onclick="calcPress('C')">C</button>
+    <button class="calc-key op" type="button" onclick="calcPress('BS')">⌫</button>
+    <button class="calc-key op" type="button" onclick="calcPress('%')">%</button>
+    <button class="calc-key op" type="button" onclick="calcPress('/')">/</button>
+    <button class="calc-key" type="button" onclick="calcPress('7')">7</button>
+    <button class="calc-key" type="button" onclick="calcPress('8')">8</button>
+    <button class="calc-key" type="button" onclick="calcPress('9')">9</button>
+    <button class="calc-key op" type="button" onclick="calcPress('*')">*</button>
+    <button class="calc-key" type="button" onclick="calcPress('4')">4</button>
+    <button class="calc-key" type="button" onclick="calcPress('5')">5</button>
+    <button class="calc-key" type="button" onclick="calcPress('6')">6</button>
+    <button class="calc-key op" type="button" onclick="calcPress('-')">-</button>
+    <button class="calc-key" type="button" onclick="calcPress('1')">1</button>
+    <button class="calc-key" type="button" onclick="calcPress('2')">2</button>
+    <button class="calc-key" type="button" onclick="calcPress('3')">3</button>
+    <button class="calc-key op" type="button" onclick="calcPress('+')">+</button>
+    <button class="calc-key" type="button" onclick="calcPress('0')">0</button>
+    <button class="calc-key" type="button" onclick="calcPress('.')">.</button>
+    <button class="calc-key op" type="button" onclick="calcPress('00')">00</button>
+    <button class="calc-key eq" type="button" onclick="calcPress('=')">=</button>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<script src="/js/app.js"></script>
+<script src="/js/agent.js"></script>
+</body>
+</html>
