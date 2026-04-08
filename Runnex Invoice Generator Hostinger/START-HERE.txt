@@ -1,5 +1,5 @@
 ================================================================================
-  Invoice Pilot — Hostinger upload pack
+  Hostinger upload pack
 ================================================================================
 
 After you extract this ZIP into your website root (usually public_html, or your
