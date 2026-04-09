@@ -1,0 +1,186 @@
+RUNNEX INVOICE GENERATOR - EXPLAINER
+========================================================
+
+Purpose in one line
+-------------------
+This tool helps a logistics team create invoices faster by uploading RateCon PDFs, auto-extracting load data with AI, reviewing/editing rows, and exporting clean PDF invoices.
+
+
+1) What this tool is (simple)
+-----------------------------
+- It is a full web app (frontend + backend + database).
+- Users log in as admin or agent.
+- Agents create invoice drafts and export PDF invoices.
+- Admins manage clients, agents, templates, company settings, payment accounts.
+- AI reads uploaded PDF rate confirmations and fills invoice fields.
+
+
+2) Tech stack (development language and tools)
+----------------------------------------------
+Frontend:
+- HTML pages (`admin.html`, `agent.html`, `login.html`, `index.html`)
+- Vanilla JavaScript (no React/Vue)
+- CSS (`css/main.css`)
+- Browser APIs: `fetch`, `localStorage`, DOM APIs
+- PDF rendering in browser using `jsPDF` + `autoTable`
+
+Backend:
+- PHP (strict types enabled in files)
+- API entry point: `api/index.php`
+- Session auth (cookie-based PHP session)
+- Routing by path segments in PHP handlers
+
+Database:
+- MySQL / MariaDB
+- Schema SQL: `database-import.sql`
+
+AI / model:
+- Anthropic Claude API used from PHP
+- Default model in code: `claude-sonnet-4-20250514`
+- File: `api/lib/claude_geo.php`
+
+Hosting target:
+- Shared hosting style (Hostinger friendly)
+- Designed to run in simple PHP + MySQL environment
+
+
+3) Main folder map
+------------------
+- `Runnex Invoice Generator Hostinger/`
+  - `api/` -> all backend API logic
+    - `index.php` -> router
+    - `bootstrap.php` -> secrets, DB connection, sessions
+    - `handlers/` -> feature endpoints (auth, clients, invoices, upload, etc.)
+    - `lib/claude_geo.php` -> Claude extraction + miles estimation utilities
+  - `js/`
+    - `app.js` -> shared frontend utilities (API helper, auth checks, theme, UI helpers)
+    - `agent.js` -> agent workflow: upload parse, draft management, invoice table editing, PDF export
+    - `invoice-pdf-export.js` -> build PDF from export payload (admin/reuse flow)
+  - `css/main.css` -> styling
+  - `database-import.sql` -> full schema + seed data
+  - `database-migration-payment-accounts.sql` -> migration for payment accounts
+
+
+4) How data flows (end-to-end)
+------------------------------
+1. User logs in -> PHP session created.
+2. Agent uploads one or more PDFs in agent page.
+3. Frontend sends multipart form to `/api/upload/parse` (field name: `ratecon[]`).
+4. Backend sends PDF bytes to Claude (Anthropic Messages API).
+5. Claude returns JSON fields (pickup/dropoff, miles, rate, etc.).
+6. Backend normalizes/cleans data and can estimate miles if missing.
+7. Frontend shows extracted values, agent edits if needed.
+8. Agent saves draft -> invoice + rows stored in DB.
+9. Export PDF -> frontend creates branded PDF with tables, totals, payment block.
+10. Draft can be marked finalized.
+
+
+5) Important API resources (high level)
+---------------------------------------
+From router in `api/index.php`:
+- `/api/auth` -> login/logout/me/change password
+- `/api/clients` -> client CRUD
+- `/api/agents` -> agent management/assignment
+- `/api/templates` -> invoice table/column templates
+- `/api/company` -> company profile settings
+- `/api/payment-accounts` -> payment details printed in PDF
+- `/api/invoices` -> save/load/delete/list drafts, reports
+- `/api/upload` -> parse PDFs + upload company logo
+
+
+6) Database tables you should know
+----------------------------------
+- `users` -> admin/agent accounts
+- `company_settings` -> brand name, email, phone, logo, currency
+- `clients` -> bill-to clients
+- `agent_client_assignments` -> which agent can access which clients
+- `table_templates` + `column_templates` -> dynamic invoice table structure
+- `payment_accounts` -> wire/payment instruction blocks
+- `invoice_drafts` -> invoice header + status
+- `invoice_rows` -> row JSON per table
+- `uploads` -> uploaded PDF metadata + extracted outputs
+
+
+7) AI extraction model details
+------------------------------
+- API key comes from `api/secrets.php` (`anthropic_api_key`) or env `ANTHROPIC_API_KEY`.
+- Model name is configurable by `anthropic_model`, defaults to Sonnet 4 variant.
+- Prompt asks Claude to return ONLY JSON with required keys.
+- If miles not found, backend estimates miles using:
+  1) Google Distance Matrix (if key configured),
+  2) OSRM route + Nominatim geocoding,
+  3) Haversine fallback.
+- If key is wrong, code returns clear HTTP 401 message and guidance.
+
+
+8) Security and auth basics
+---------------------------
+- Session cookie auth (`ip_sess`) with `HttpOnly`, `SameSite=Lax`.
+- Role checks used (`require_login`, `require_admin`) in handlers.
+- Frontend calls API with `credentials: 'same-origin'`.
+- Never commit real API keys/passwords in public repos.
+- `api/secrets.php` is sensitive and should be protected.
+
+
+9) PDF generation basics
+------------------------
+- Built client-side using `jsPDF` and `autoTable`.
+- Shows company branding, invoice details, bill-to, line tables, subtotal row, totals row.
+- Includes dispatcher fee and optional payment-account block.
+- Exports filename like `Invoice-<number>-<date>.pdf`.
+
+
+10) Configuration quick checklist
+---------------------------------
+To run in a new server:
+- Create MySQL database.
+- Import `database-import.sql`.
+- Copy `api/secrets.sample.php` to `api/secrets.php`.
+- Fill DB host/name/user/pass in secrets.
+- Set `anthropic_api_key`.
+- Optional: set `google_maps_api_key` for better miles estimation.
+- Ensure `uploads/` and logo folders are writable.
+
+
+11) Common developer questions (ready answers)
+----------------------------------------------
+Q: Is this frontend framework-based?
+A: No. It is plain HTML/CSS/vanilla JavaScript.
+
+Q: What backend language?
+A: PHP with modular handlers and a custom API router.
+
+Q: Which AI model is used?
+A: Anthropic Claude Messages API, default model `claude-sonnet-4-20250514` unless overridden in secrets.
+
+Q: Where is invoice PDF logic?
+A: Mostly in `js/agent.js` (agent export) and `js/invoice-pdf-export.js` (export-data flow).
+
+Q: Where are invoice table columns defined?
+A: In DB tables `table_templates` and `column_templates` (admin-managed).
+
+Q: How is auth implemented?
+A: PHP sessions + role checks + same-origin credentialed API calls.
+
+Q: Can it parse many PDFs at once?
+A: Yes, batch upload supported; frontend sends `ratecon[]`.
+
+Q: Where to debug parsing issues?
+A: Start in `api/handlers/upload.php` and `api/lib/claude_geo.php`, then check Claude key/config.
+
+Q: Where to debug draft save/load issues?
+A: Check `api/handlers/invoices.php`, `agent.js` save/load functions, and DB tables `invoice_drafts`/`invoice_rows`.
+
+
+12) What to improve next (if asked)
+-----------------------------------
+- Add automated tests (PHP API + JS UI logic).
+- Add centralized logging for API and Claude failures.
+- Add input validation library and stronger error mapping.
+- Add migration/versioning strategy for schema changes.
+- Add retry/backoff and rate-limit handling for external APIs.
+
+
+Short elevator pitch you can reuse
+----------------------------------
+"Runnex Invoice Generator is a PHP + MySQL logistics invoicing web app with a vanilla JS frontend. It uses Anthropic Claude to extract load data from RateCon PDFs, lets agents edit and save invoice drafts, and exports branded invoice PDFs with calculated totals and payment details."
